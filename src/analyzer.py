@@ -1506,6 +1506,14 @@ class GeminiAnalyzer:
         
         # ========== 构建决策仪表盘格式的输入 ==========
         close_label = "当前价(盘中)" if context.get('is_intraday') else "收盘价"
+        # 昨收数据：优先从 realtime 获取，备选从 today 推算
+        pre_close = None
+        if 'realtime' in context:
+            pre_close = context['realtime'].get('pre_close')
+        if pre_close is None:
+            pre_close = today.get('pre_close')
+        pre_close_str = f"{pre_close} 元" if pre_close is not None else unknown_text
+
         prompt = f"""# 决策仪表盘分析请求
 
 ## 📊 股票基础信息
@@ -1523,6 +1531,7 @@ class GeminiAnalyzer:
 | 指标 | 数值 |
 |------|------|
 | {close_label} | {today.get('close', 'N/A')} 元 |
+| 昨收 | {pre_close_str} |
 | 开盘价 | {today.get('open', 'N/A')} 元 |
 | 最高价 | {today.get('high', 'N/A')} 元 |
 | 最低价 | {today.get('low', 'N/A')} 元 |
