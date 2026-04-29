@@ -75,6 +75,12 @@ _OPT_IN_THINKING_MODELS: Dict[str, dict] = {
     "deepseek-chat": {"thinking": {"type": "enabled"}},
 }
 
+# Models that need reasoning disabled in extra_body to output content normally
+# (otherwise they put everything in the `reasoning` field and leave `content` null).
+_REASONING_DISABLED_MODELS: Dict[str, dict] = {
+    "hy3-preview": {"reasoning": {"disabled": True}},
+}
+
 # Custom model pricing for models not in LiteLLM's built-in price list
 # Official MiniMax pricing: https://platform.minimax.io/docs/guides/pricing-paygo
 # - MiniMax-M2.7 / M2.5: $0.3/M input tokens, $1.2/M output tokens
@@ -119,7 +125,8 @@ def _get_opt_in_payload(model: str, opt_in: Dict[str, dict]) -> Optional[dict]:
         return None
     m = model.lower().strip()
     for key, payload in opt_in.items():
-        if m == key or m.startswith(key + "-"):
+        k = key.lower().strip()
+        if m == k or m.startswith(k + "-") or k in m:
             return payload
     return None
 
@@ -133,11 +140,16 @@ def get_thinking_extra_body(model: str) -> Optional[dict]:
       Return None to avoid duplicate activation.
     - Opt-in models (_OPT_IN_THINKING_MODELS: deepseek-chat): Return the activation
       payload to explicitly enable thinking mode.
+    - Reasoning-disabled models (_REASONING_DISABLED_MODELS: hy3-preview):
+      Return the disable payload to force content output instead of reasoning field.
     - All other models: Return None (no thinking mode).
     """
     if _model_matches(model, _AUTO_THINKING_MODELS):
         return None
-    return _get_opt_in_payload(model, _OPT_IN_THINKING_MODELS)
+    opt_in = _get_opt_in_payload(model, _OPT_IN_THINKING_MODELS)
+    if opt_in is not None:
+        return opt_in
+    return _get_opt_in_payload(model, _REASONING_DISABLED_MODELS)
 
 
 # ============================================================
