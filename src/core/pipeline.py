@@ -637,6 +637,8 @@ class StockAnalysisPipeline:
                     realtime_today['amount'] = amt
                 if pct is not None:
                     realtime_today['pct_chg'] = pct
+                # 标记为盘中数据（非收盘价），供 analyzer 调整标签文本
+                enhanced['is_intraday'] = True
                 for k, v in orig_today.items():
                     if k not in realtime_today and v is not None:
                         realtime_today[k] = v
